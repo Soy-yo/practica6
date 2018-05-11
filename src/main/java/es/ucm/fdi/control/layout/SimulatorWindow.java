@@ -1,6 +1,7 @@
 package es.ucm.fdi.control.layout;
 
 import es.ucm.fdi.control.Controller;
+import es.ucm.fdi.control.Stepper;
 import es.ucm.fdi.control.layout.graphlayout.GraphComponent;
 import es.ucm.fdi.events.Event;
 import es.ucm.fdi.events.EventBuilder;
@@ -56,7 +57,7 @@ public class SimulatorWindow extends JFrame {
 
   private Map<Command, SimulatorAction> actionMap;
 
-  private Thread runThread;
+  private Stepper stepper;
 
   // Dirección desde donde se abrirá el siguiente JFileChooser
   private String previousPath;
@@ -65,6 +66,22 @@ public class SimulatorWindow extends JFrame {
     super(title);
     controller = new Controller(new TrafficSimulator());
     initialize(dimension, initialFile, steps);
+    stepper = new Stepper(
+        () -> {
+          enableActions(false, Command.LOAD_EVENTS, Command.SAVE_EVENTS, Command.CLEAR_EVENTS,
+              Command.MOVE_EVENTS, Command.RUN, Command.RESET, Command.GENERATE_REPORT);
+          enableActions(true, Command.STOP);
+          stepCounter.setEnabled(false);
+          stepDelay.setEnabled(false);
+        },
+        () -> controller.run(1),
+        () -> {
+          enableActions(true, Command.LOAD_EVENTS, Command.SAVE_EVENTS, Command.CLEAR_EVENTS,
+              Command.RESET, Command.GENERATE_REPORT);
+          enableActions(false, Command.STOP);
+          stepCounter.setEnabled(true);
+          stepDelay.setEnabled(true);
+        });
     if (initialFile != null) {
       previousPath = initialFile.getPath();
     }
@@ -323,6 +340,15 @@ public class SimulatorWindow extends JFrame {
   }
 
   /**
+   * Activa o desactiva los comandos indicados
+   */
+  private void enableActions(boolean enabled, Command... commands) {
+    for (Command c : commands) {
+      actionMap.get(c).setEnabled(enabled);
+    }
+  }
+
+  /**
    * Añade la barra de estado inferior
    */
   private void addStatusBar() {
@@ -348,22 +374,16 @@ public class SimulatorWindow extends JFrame {
     controller.getSimulator().addListener(new TrafficSimulator.Listener() {
       @Override
       public void registered(TrafficSimulator.UpdateEvent ue) {
-        actionMap.get(Command.RUN).setEnabled(false);
-        actionMap.get(Command.STOP).setEnabled(false);
-        actionMap.get(Command.RESET).setEnabled(false);
-        actionMap.get(Command.GENERATE_REPORT).setEnabled(false);
-        actionMap.get(Command.DELETE_REPORT).setEnabled(false);
-        actionMap.get(Command.SAVE_REPORT).setEnabled(false);
+        enableActions(false, Command.RUN, Command.STOP, Command.RESET, Command.GENERATE_REPORT,
+            Command.DELETE_REPORT, Command.SAVE_REPORT);
       }
 
       @Override
       public void reset(TrafficSimulator.UpdateEvent ue) {
         time.setText("" + 0);
-        actionMap.get(Command.MOVE_EVENTS).setEnabled(true);
-        actionMap.get(Command.RESET).setEnabled(false);
-        actionMap.get(Command.GENERATE_REPORT).setEnabled(false);
-        actionMap.get(Command.DELETE_REPORT).setEnabled(false);
-        actionMap.get(Command.SAVE_REPORT).setEnabled(false);
+        enableActions(true, Command.MOVE_EVENTS);
+        enableActions(false, Command.RESET, Command.GENERATE_REPORT, Command.DELETE_REPORT,
+            Command.SAVE_REPORT);
         refreshTables(ue.getVehicles(), ue.getRoads(), ue.getJunctions());
         roadMap.clear();
         setStatusText("Simulator has just been reset!");
@@ -374,7 +394,7 @@ public class SimulatorWindow extends JFrame {
         List<Event> events = ue.getEventQueue();
         if (!events.isEmpty()) {
           eventsQueue.setElements(events);
-          actionMap.get(Command.RUN).setEnabled(true);
+          enableActions(true, Command.RUN);
         }
         setStatusText("Events have been loaded to the simulator!");
       }
@@ -472,46 +492,16 @@ public class SimulatorWindow extends JFrame {
    * Lanza la ejecución del simulador los ticks indicados
    */
   private void run() {
-    actionMap.get(Command.LOAD_EVENTS).setEnabled(false);
-    actionMap.get(Command.SAVE_EVENTS).setEnabled(false);
-    actionMap.get(Command.CLEAR_EVENTS).setEnabled(false);
-    actionMap.get(Command.MOVE_EVENTS).setEnabled(false);
-    actionMap.get(Command.RUN).setEnabled(false);
-    actionMap.get(Command.STOP).setEnabled(true);
-    actionMap.get(Command.RESET).setEnabled(false);
-    actionMap.get(Command.GENERATE_REPORT).setEnabled(false);
-    stepCounter.setEnabled(false);
-    stepDelay.setEnabled(false);
     int delay = (Integer) stepDelay.getValue();
     int ticks = (Integer) stepCounter.getValue();
-    runThread = new Thread(() -> {
-      try {
-        for (int i = 0; i < ticks; i++) {
-          controller.run(1);
-          Thread.sleep(delay);
-          stepCounter.setValue(ticks - i - 1);
-        }
-      } catch (InterruptedException e) {
-        setStatusText("Simulation interrupted");
-      }
-      actionMap.get(Command.LOAD_EVENTS).setEnabled(true);
-      actionMap.get(Command.SAVE_EVENTS).setEnabled(true);
-      actionMap.get(Command.CLEAR_EVENTS).setEnabled(true);
-      actionMap.get(Command.STOP).setEnabled(false);
-      actionMap.get(Command.RESET).setEnabled(true);
-      actionMap.get(Command.GENERATE_REPORT).setEnabled(true);
-      stepCounter.setEnabled(true);
-      stepCounter.setValue(ticks);
-      stepDelay.setEnabled(true);
-    }, "Run");
-    runThread.start();
+    stepper.start(ticks, delay);
   }
 
   /**
    * Para la ejecución del simulador
    */
   private void stop() {
-    runThread.interrupt();
+    stepper.stop();
   }
 
   /**
@@ -540,8 +530,7 @@ public class SimulatorWindow extends JFrame {
       Collection<Junction> junctions = dialog.getSelectedJunctions();
       reportsArea.clear();
       simulator.generateReports(new TextAreaOutputStream(reportsArea), junctions, roads, vehicles);
-      actionMap.get(Command.DELETE_REPORT).setEnabled(true);
-      actionMap.get(Command.SAVE_REPORT).setEnabled(true);
+      enableActions(true, Command.DELETE_REPORT, Command.SAVE_REPORT);
     }
   }
 
@@ -550,8 +539,7 @@ public class SimulatorWindow extends JFrame {
    */
   private void deleteReports() {
     reportsArea.clear();
-    actionMap.get(Command.DELETE_REPORT).setEnabled(false);
-    actionMap.get(Command.SAVE_REPORT).setEnabled(false);
+    enableActions(false, Command.DELETE_REPORT, Command.SAVE_REPORT);
   }
 
   /**
