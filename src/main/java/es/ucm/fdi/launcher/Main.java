@@ -2,7 +2,7 @@ package es.ucm.fdi.launcher;
 
 import es.ucm.fdi.control.Controller;
 import es.ucm.fdi.control.layout.SimulatorWindow;
-import es.ucm.fdi.excepcions.SimulatorError;
+import es.ucm.fdi.exceptions.SimulatorError;
 import es.ucm.fdi.ini.Ini;
 import es.ucm.fdi.model.TrafficSimulator;
 import org.apache.commons.cli.*;

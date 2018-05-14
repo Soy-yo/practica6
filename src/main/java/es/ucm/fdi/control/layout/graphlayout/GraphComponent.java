@@ -1,15 +1,9 @@
 package es.ucm.fdi.control.layout.graphlayout;
 
-import es.ucm.fdi.model.Junction;
-import es.ucm.fdi.model.Road;
-import es.ucm.fdi.model.Vehicle;
-
 import javax.swing.*;
 import java.awt.*;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 
 public class GraphComponent extends JComponent {
 
@@ -24,6 +18,18 @@ public class GraphComponent extends JComponent {
    * The radius of each dot
    */
   private static final int DOT_RADIUS = 5;
+
+  /**
+   * Available dot colors for this graph component
+   */
+  private static final Color[] DOT_COLORS = {
+      new Color(0xff3300), // naranja
+      new Color(0xff3399), // rosa
+      new Color(0x3333ff), // azul
+      new Color(0xff9900), // naranja claro
+      new Color(0x9900cc), // morado
+      new Color(0x009933)  // verde
+  };
 
   /**
    * An inner class that represent a location of a node. Fields cX and cY are
@@ -138,10 +144,9 @@ public class GraphComponent extends JComponent {
         } else {
           diam += DOT_RADIUS;
         }
-        Color dotColor = Math.random() > 0.5 ? Color.MAGENTA
-            : Color.ORANGE;
-        drawCircleOnALine(g, p1.cX, p1.cY, p2.cX, p2.cY, e.getLength(),
-            d.getLocation(), diam, dotColor, d.getId());
+        Color dotColor = DOT_COLORS[d.getValue() % DOT_COLORS.length];
+        drawCircleOnALine(g, p1.cX, p1.cY, p2.cX, p2.cY, e.getLength(), d.getLocation(), diam,
+            dotColor, d.getId());
       }
     }
   }
@@ -253,36 +258,6 @@ public class GraphComponent extends JComponent {
 
   public void refresh() {
     repaint();
-  }
-
-  /**
-   * Genera un grafo con los objetos del simulador
-   */
-  public void generateGraph(Collection<Vehicle> vehicles, Collection<Road> roads,
-                            Collection<Junction> junctions, Set<Road> greenRoads) {
-    graph = new Graph();
-    Map<String, Node> js = new HashMap<>();
-    for (Junction j : junctions) {
-      Node n = new Node(j.getId());
-      js.put(j.getId(), n);
-      graph.addNode(n);
-    }
-    Map<String, Edge> rs = new HashMap<>();
-    for (Road r : roads) {
-      Node source = js.get(r.getSource());
-      Node destiny = js.get(r.getDestiny());
-      Edge e = new Edge(r.getId(), source, destiny, r.getLength(), greenRoads.contains(r));
-      rs.put(r.getId(), e);
-      graph.addEdge(e);
-    }
-    for (Vehicle v : vehicles) {
-      if (!v.hasArrived()) {
-        Edge e = rs.get(v.getRoad().getId());
-        e.addDot(new Dot(v.getId(), v.getLocation()));
-      }
-    }
-    calculateNodeCoordinates();
-    refresh();
   }
 
 }

@@ -26,6 +26,16 @@ public class MultiTreeMap<K, V> extends TreeMap<K, ArrayList<V>> {
     valueCount = 0;
   }
 
+  @Override
+  public ArrayList<V> remove(Object key) {
+    ArrayList<V> oldValue = super.remove(key);
+    if (oldValue == null) {
+      return null;
+    }
+    valueCount -= oldValue.size();
+    return oldValue;
+  }
+
   /**
    * Adds a value at the end of the list of values for the specified key.
    *
@@ -59,7 +69,7 @@ public class MultiTreeMap<K, V> extends TreeMap<K, ArrayList<V>> {
       valueCount--;
     }
     if (bucket.isEmpty()) {
-      remove(key);
+      super.remove(key);
     }
     return removed;
   }

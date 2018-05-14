@@ -1,7 +1,7 @@
 package es.ucm.fdi.model;
 
 import es.ucm.fdi.events.Event;
-import es.ucm.fdi.excepcions.SimulatorError;
+import es.ucm.fdi.exceptions.SimulatorError;
 import es.ucm.fdi.ini.Ini;
 import es.ucm.fdi.ini.IniSection;
 import es.ucm.fdi.util.MultiTreeMap;
@@ -25,6 +25,7 @@ public class TrafficSimulator {
 
   public TrafficSimulator() {
     listeners = new ArrayList<>();
+    events = new MultiTreeMap<>();
     reset();
   }
 
@@ -33,7 +34,6 @@ public class TrafficSimulator {
    */
   public void reset() {
     currentTime = 0;
-    events = new MultiTreeMap<>();
     roadMap = new RoadMap();
     fireUpdateEvent(EventType.RESET, null);
   }
@@ -212,7 +212,7 @@ public class TrafficSimulator {
           } catch (IllegalArgumentException | IllegalStateException ex) {
             fireUpdateEvent(EventType.ERROR,
                 "Something went wrong while executing event " + e + "\n" + ex.getMessage());
-            // Error occurred, can't continue at this point
+            // Ha ocurrido un error, no debería continuar
             return;
           }
         }

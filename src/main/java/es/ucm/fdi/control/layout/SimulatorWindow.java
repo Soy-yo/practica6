@@ -2,7 +2,7 @@ package es.ucm.fdi.control.layout;
 
 import es.ucm.fdi.control.Controller;
 import es.ucm.fdi.control.Stepper;
-import es.ucm.fdi.control.layout.graphlayout.GraphComponent;
+import es.ucm.fdi.control.layout.graphlayout.*;
 import es.ucm.fdi.events.Event;
 import es.ucm.fdi.events.EventBuilder;
 import es.ucm.fdi.model.Junction;
@@ -20,10 +20,8 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Collection;
-import java.util.HashMap;
+import java.util.*;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Ventana principal para el modo GUI
@@ -67,21 +65,21 @@ public class SimulatorWindow extends JFrame {
     controller = new Controller(new TrafficSimulator());
     initialize(dimension, initialFile, steps);
     stepper = new Stepper(
-        () -> {
+        () -> SwingUtilities.invokeLater(() -> {
           enableActions(false, Command.LOAD_EVENTS, Command.SAVE_EVENTS, Command.CLEAR_EVENTS,
               Command.MOVE_EVENTS, Command.RUN, Command.RESET, Command.GENERATE_REPORT);
           enableActions(true, Command.STOP);
           stepCounter.setEnabled(false);
           stepDelay.setEnabled(false);
-        },
+        }),
         () -> controller.run(1),
-        () -> {
+        () -> SwingUtilities.invokeLater(() -> {
           enableActions(true, Command.LOAD_EVENTS, Command.SAVE_EVENTS, Command.CLEAR_EVENTS,
-              Command.RESET, Command.GENERATE_REPORT);
+              Command.MOVE_EVENTS, Command.RUN, Command.RESET, Command.GENERATE_REPORT);
           enableActions(false, Command.STOP);
           stepCounter.setEnabled(true);
           stepDelay.setEnabled(true);
-        });
+        }));
     if (initialFile != null) {
       previousPath = initialFile.getPath();
     }
@@ -257,7 +255,7 @@ public class SimulatorWindow extends JFrame {
     // Tool bar
     JToolBar bar = new JToolBar();
 
-    stepDelay = new JSpinner(new SpinnerNumberModel(300, 100, 2000, 100));
+    stepDelay = new JSpinner(new SpinnerNumberModel(300, 0, 2000, 100));
     stepDelay.setMaximumSize(new Dimension(75, 30));
 
     stepCounter = new JSpinner(new SpinnerNumberModel(initialSteps, 0, 100, 1));
@@ -382,9 +380,9 @@ public class SimulatorWindow extends JFrame {
       public void reset(TrafficSimulator.UpdateEvent ue) {
         time.setText("" + 0);
         enableActions(true, Command.MOVE_EVENTS);
-        enableActions(false, Command.RESET, Command.GENERATE_REPORT, Command.DELETE_REPORT,
-            Command.SAVE_REPORT);
-        refreshTables(ue.getVehicles(), ue.getRoads(), ue.getJunctions());
+        enableActions(false, Command.RUN, Command.RESET, Command.GENERATE_REPORT,
+            Command.DELETE_REPORT, Command.SAVE_REPORT);
+        refreshTables(Collections.emptyList(), Collections.emptyList(), Collections.emptyList());
         roadMap.clear();
         setStatusText("Simulator has just been reset!");
       }
@@ -403,18 +401,49 @@ public class SimulatorWindow extends JFrame {
       public void advanced(TrafficSimulator.UpdateEvent ue) {
         time.setText("" + ue.getCurrentTime());
         refreshTables(ue.getVehicles(), ue.getRoads(), ue.getJunctions());
-        roadMap.generateGraph(ue.getVehicles(), ue.getRoads(), ue.getJunctions(),
+        eventsQueue.setElements(ue.getEventQueue());
+        generateGraph(ue.getVehicles(), ue.getRoads(), ue.getJunctions(),
             controller.getSimulator().getGreenRoads());
-        setStatusText("Simulator advanced " + time.getText() + " steps!");
+        setStatusText("Simulator advanced " + ue.getCurrentTime() + " steps!");
       }
 
       @Override
       public void error(TrafficSimulator.UpdateEvent ue, String msg) {
         setStatusText("An error occurred!!");
+        stepper.stop();
         showErrorMessage("Simulator error", msg);
         SimulatorWindow.this.reset();
       }
     });
+  }
+
+  /**
+   * Genera un grafo con los objetos del simulador
+   */
+  private void generateGraph(Collection<Vehicle> vehicles, Collection<Road> roads,
+                             Collection<Junction> junctions, Set<Road> greenRoads) {
+    Graph graph = new Graph();
+    Map<String, Node> js = new HashMap<>();
+    for (Junction j : junctions) {
+      Node n = new Node(j.getId());
+      js.put(j.getId(), n);
+      graph.addNode(n);
+    }
+    Map<String, Edge> rs = new HashMap<>();
+    for (Road r : roads) {
+      Node source = js.get(r.getSource());
+      Node destiny = js.get(r.getDestiny());
+      Edge e = new Edge(r.getId(), source, destiny, r.getLength(), greenRoads.contains(r));
+      rs.put(r.getId(), e);
+      graph.addEdge(e);
+    }
+    for (Vehicle v : vehicles) {
+      if (!v.hasArrived()) {
+        Edge e = rs.get(v.getRoad().getId());
+        e.addDot(new Dot(v.getId(), v.getLocation(), v.hashCode()));
+      }
+    }
+    roadMap.setGraph(graph);
   }
 
   /**
@@ -492,6 +521,7 @@ public class SimulatorWindow extends JFrame {
    * Lanza la ejecución del simulador los ticks indicados
    */
   private void run() {
+    controller.getSimulator().reset();
     int delay = (Integer) stepDelay.getValue();
     int ticks = (Integer) stepCounter.getValue();
     stepper.start(ticks, delay);
@@ -511,6 +541,7 @@ public class SimulatorWindow extends JFrame {
     eventsQueue.clear();
     reportsArea.clear();
     controller.reset();
+    controller.getSimulator().clearEvents();
   }
 
   /**
