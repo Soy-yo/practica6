@@ -1,6 +1,6 @@
 package es.ucm.fdi.launcher;
 
-import es.ucm.fdi.excepcions.SimulatorError;
+import es.ucm.fdi.exceptions.SimulatorError;
 import org.junit.Test;
 
 public class MainTest {

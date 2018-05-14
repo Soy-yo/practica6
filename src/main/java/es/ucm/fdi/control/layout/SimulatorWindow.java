@@ -2,7 +2,7 @@ package es.ucm.fdi.control.layout;
 
 import es.ucm.fdi.control.Controller;
 import es.ucm.fdi.control.Stepper;
-import es.ucm.fdi.control.layout.graphlayout.GraphComponent;
+import es.ucm.fdi.control.layout.graphlayout.*;
 import es.ucm.fdi.events.Event;
 import es.ucm.fdi.events.EventBuilder;
 import es.ucm.fdi.model.Junction;
@@ -20,10 +20,8 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Collection;
-import java.util.HashMap;
+import java.util.*;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Ventana principal para el modo GUI
@@ -403,9 +401,9 @@ public class SimulatorWindow extends JFrame {
       public void advanced(TrafficSimulator.UpdateEvent ue) {
         time.setText("" + ue.getCurrentTime());
         refreshTables(ue.getVehicles(), ue.getRoads(), ue.getJunctions());
-        roadMap.generateGraph(ue.getVehicles(), ue.getRoads(), ue.getJunctions(),
+        generateGraph(ue.getVehicles(), ue.getRoads(), ue.getJunctions(),
             controller.getSimulator().getGreenRoads());
-        setStatusText("Simulator advanced " + time.getText() + " steps!");
+        setStatusText("Simulator advanced " + ue.getCurrentTime() + " steps!");
       }
 
       @Override
@@ -415,6 +413,35 @@ public class SimulatorWindow extends JFrame {
         SimulatorWindow.this.reset();
       }
     });
+  }
+
+  /**
+   * Genera un grafo con los objetos del simulador
+   */
+  public void generateGraph(Collection<Vehicle> vehicles, Collection<Road> roads,
+                            Collection<Junction> junctions, Set<Road> greenRoads) {
+    Graph graph = new Graph();
+    Map<String, Node> js = new HashMap<>();
+    for (Junction j : junctions) {
+      Node n = new Node(j.getId());
+      js.put(j.getId(), n);
+      graph.addNode(n);
+    }
+    Map<String, Edge> rs = new HashMap<>();
+    for (Road r : roads) {
+      Node source = js.get(r.getSource());
+      Node destiny = js.get(r.getDestiny());
+      Edge e = new Edge(r.getId(), source, destiny, r.getLength(), greenRoads.contains(r));
+      rs.put(r.getId(), e);
+      graph.addEdge(e);
+    }
+    for (Vehicle v : vehicles) {
+      if (!v.hasArrived()) {
+        Edge e = rs.get(v.getRoad().getId());
+        e.addDot(new Dot(v.getId(), v.getLocation(), v.hashCode()));
+      }
+    }
+    roadMap.setGraph(graph);
   }
 
   /**

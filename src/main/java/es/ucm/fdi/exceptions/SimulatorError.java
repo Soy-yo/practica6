@@ -1,4 +1,4 @@
-package es.ucm.fdi.excepcions;
+package es.ucm.fdi.exceptions;
 
 /**
  * Para los errores que puedan surgir durante el transcurso de la simulación

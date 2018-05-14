@@ -1,7 +1,7 @@
 package es.ucm.fdi.model;
 
 import es.ucm.fdi.events.Event;
-import es.ucm.fdi.excepcions.SimulatorError;
+import es.ucm.fdi.exceptions.SimulatorError;
 import es.ucm.fdi.ini.Ini;
 import es.ucm.fdi.ini.IniSection;
 import es.ucm.fdi.util.MultiTreeMap;
