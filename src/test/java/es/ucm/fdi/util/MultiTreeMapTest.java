@@ -137,6 +137,8 @@ public class MultiTreeMapTest {
 
     for (T t : array) ts.putValue(t.i, t);
     assertEquals("size ok", array.length, ts.sizeOfValues());
+    ts.remove(1);
+    assertEquals("size ok after removing", array.length - 2, ts.sizeOfValues());
   }
 
   @Test
@@ -211,7 +213,6 @@ public class MultiTreeMapTest {
     List<T> values = ts.valuesList();
 
     for (int i = 0; i < values.size(); i++) {
-      values.get(i);
       assertEquals("Get in order works", array[i], values.get(i));
     }
 

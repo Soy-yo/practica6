@@ -56,7 +56,7 @@ public class Controller {
           Event event = EventBuilder.parse(section);
           if (event == null) {
             throw new IllegalStateException(
-                "Event for section " + section.getTag() + " was not recognized");
+                "Event not recognized\n" + section);
           }
           simulator.addEvent(event);
         } catch (IllegalStateException e) {
