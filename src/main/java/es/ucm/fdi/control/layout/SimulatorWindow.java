@@ -67,7 +67,8 @@ public class SimulatorWindow extends JFrame {
     stepper = new Stepper(
         () -> SwingUtilities.invokeLater(() -> {
           enableActions(false, Command.LOAD_EVENTS, Command.SAVE_EVENTS, Command.CLEAR_EVENTS,
-              Command.MOVE_EVENTS, Command.RUN, Command.RESET, Command.GENERATE_REPORT);
+              Command.MOVE_EVENTS, Command.RUN, Command.RESET, Command.GENERATE_REPORT,
+              Command.DELETE_REPORT, Command.SAVE_REPORT);
           enableActions(true, Command.STOP);
           stepCounter.setEnabled(false);
           stepDelay.setEnabled(false);
@@ -75,7 +76,8 @@ public class SimulatorWindow extends JFrame {
         () -> controller.run(1),
         () -> SwingUtilities.invokeLater(() -> {
           enableActions(true, Command.LOAD_EVENTS, Command.SAVE_EVENTS, Command.CLEAR_EVENTS,
-              Command.MOVE_EVENTS, Command.RUN, Command.RESET, Command.GENERATE_REPORT);
+              Command.MOVE_EVENTS, Command.RUN, Command.RESET, Command.GENERATE_REPORT,
+              Command.DELETE_REPORT, Command.SAVE_REPORT);
           enableActions(false, Command.STOP);
           stepCounter.setEnabled(true);
           stepDelay.setEnabled(true);
@@ -561,7 +563,6 @@ public class SimulatorWindow extends JFrame {
       Collection<Junction> junctions = dialog.getSelectedJunctions();
       reportsArea.clear();
       simulator.generateReports(new TextAreaOutputStream(reportsArea), junctions, roads, vehicles);
-      enableActions(true, Command.DELETE_REPORT, Command.SAVE_REPORT);
     }
   }
 
@@ -570,7 +571,6 @@ public class SimulatorWindow extends JFrame {
    */
   private void deleteReports() {
     reportsArea.clear();
-    enableActions(false, Command.DELETE_REPORT, Command.SAVE_REPORT);
   }
 
   /**

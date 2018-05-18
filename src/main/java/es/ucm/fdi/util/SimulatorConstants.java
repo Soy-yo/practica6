@@ -1,6 +1,7 @@
 package es.ucm.fdi.util;
 
 import org.w3c.dom.Document;
+import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
@@ -60,7 +61,12 @@ public class SimulatorConstants {
     doc.getDocumentElement().normalize();
 
     // All tags
-    NodeList nodes = doc.getDocumentElement().getChildNodes();
+    Element main = doc.getDocumentElement();
+    if (!"constants".equals(main.getNodeName())) {
+      throw new SAXException(
+          "Invalid constants file: its main tag is not \"<constants>\": " + main.getNodeName());
+    }
+    NodeList nodes = main.getChildNodes();
 
     for (int i = 0; i < nodes.getLength(); i++) {
       // Cada nodo hijo representa el id de una constante
