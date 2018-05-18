@@ -1,0 +1,8 @@
+<constants>
+    <constant id="TEST">
+        <lang value="en">Constants are fun</lang>
+        <lang value="es">Las constantes son divertidas</lang>
+    </constant>
+    <constant id="EMPTY">
+    </constant>
+</constants>
