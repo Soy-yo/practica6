@@ -533,7 +533,6 @@ public class SimulatorWindow extends JFrame {
    * Lanza la ejecución del simulador los ticks indicados
    */
   private void run() {
-    controller.getSimulator().reset();
     int delay = (Integer) stepDelay.getValue();
     int ticks = (Integer) stepCounter.getValue();
     stepper.start(ticks, delay);
