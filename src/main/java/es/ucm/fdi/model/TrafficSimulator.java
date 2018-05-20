@@ -6,7 +6,6 @@ import es.ucm.fdi.ini.Ini;
 import es.ucm.fdi.ini.IniSection;
 import es.ucm.fdi.util.MultiTreeMap;
 
-import javax.swing.*;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.*;
@@ -71,7 +70,7 @@ public class TrafficSimulator {
     listeners.add(listener);
     // Evento registrado
     UpdateEvent ue = new UpdateEvent(EventType.REGISTERED);
-    SwingUtilities.invokeLater(() -> listener.registered(ue));
+    listener.registered(ue);
   }
 
   /**
@@ -89,27 +88,27 @@ public class TrafficSimulator {
     switch (type) {
       case REGISTERED:
         for (Listener l : listeners) {
-          SwingUtilities.invokeLater(() -> l.registered(ue));
+          l.registered(ue);
         }
         break;
       case RESET:
         for (Listener l : listeners) {
-          SwingUtilities.invokeLater(() -> l.reset(ue));
+          l.reset(ue);
         }
         break;
       case NEW_EVENT:
         for (Listener l : listeners) {
-          SwingUtilities.invokeLater(() -> l.newEvent(ue));
+          l.newEvent(ue);
         }
         break;
       case ADVANCED:
         for (Listener l : listeners) {
-          SwingUtilities.invokeLater(() -> l.advanced(ue));
+          l.advanced(ue);
         }
         break;
       case ERROR:
         for (Listener l : listeners) {
-          SwingUtilities.invokeLater(() -> l.error(ue, error));
+          l.error(ue, error);
         }
         break;
     }

@@ -67,7 +67,8 @@ public class SimulatorWindow extends JFrame {
     stepper = new Stepper(
         () -> SwingUtilities.invokeLater(() -> {
           enableActions(false, Command.LOAD_EVENTS, Command.SAVE_EVENTS, Command.CLEAR_EVENTS,
-              Command.MOVE_EVENTS, Command.RUN, Command.RESET, Command.GENERATE_REPORT);
+              Command.MOVE_EVENTS, Command.RUN, Command.RESET, Command.GENERATE_REPORT,
+              Command.DELETE_REPORT, Command.SAVE_REPORT);
           enableActions(true, Command.STOP);
           stepCounter.setEnabled(false);
           stepDelay.setEnabled(false);
@@ -75,7 +76,8 @@ public class SimulatorWindow extends JFrame {
         () -> controller.run(1),
         () -> SwingUtilities.invokeLater(() -> {
           enableActions(true, Command.LOAD_EVENTS, Command.SAVE_EVENTS, Command.CLEAR_EVENTS,
-              Command.MOVE_EVENTS, Command.RUN, Command.RESET, Command.GENERATE_REPORT);
+              Command.MOVE_EVENTS, Command.RUN, Command.RESET, Command.GENERATE_REPORT,
+              Command.DELETE_REPORT, Command.SAVE_REPORT);
           enableActions(false, Command.STOP);
           stepCounter.setEnabled(true);
           stepDelay.setEnabled(true);
@@ -372,47 +374,57 @@ public class SimulatorWindow extends JFrame {
     controller.getSimulator().addListener(new TrafficSimulator.Listener() {
       @Override
       public void registered(TrafficSimulator.UpdateEvent ue) {
-        enableActions(false, Command.RUN, Command.STOP, Command.RESET, Command.GENERATE_REPORT,
-            Command.DELETE_REPORT, Command.SAVE_REPORT);
+        SwingUtilities.invokeLater(() ->
+            enableActions(false, Command.RUN, Command.STOP, Command.RESET, Command.GENERATE_REPORT,
+                Command.DELETE_REPORT, Command.SAVE_REPORT)
+        );
       }
 
       @Override
       public void reset(TrafficSimulator.UpdateEvent ue) {
-        time.setText("" + 0);
-        enableActions(true, Command.MOVE_EVENTS);
-        enableActions(false, Command.RUN, Command.RESET, Command.GENERATE_REPORT,
-            Command.DELETE_REPORT, Command.SAVE_REPORT);
-        refreshTables(Collections.emptyList(), Collections.emptyList(), Collections.emptyList());
-        roadMap.clear();
-        setStatusText("Simulator has just been reset!");
+        SwingUtilities.invokeLater(() -> {
+          time.setText("" + 0);
+          enableActions(true, Command.MOVE_EVENTS);
+          enableActions(false, Command.RUN, Command.RESET, Command.GENERATE_REPORT,
+              Command.DELETE_REPORT, Command.SAVE_REPORT);
+          refreshTables(Collections.emptyList(), Collections.emptyList(), Collections.emptyList());
+          roadMap.clear();
+          setStatusText("Simulator has just been reset!");
+        });
       }
 
       @Override
       public void newEvent(TrafficSimulator.UpdateEvent ue) {
-        List<Event> events = ue.getEventQueue();
-        if (!events.isEmpty()) {
-          eventsQueue.setElements(events);
-          enableActions(true, Command.RUN);
-        }
-        setStatusText("Events have been loaded to the simulator!");
+        SwingUtilities.invokeLater(() -> {
+          List<Event> events = ue.getEventQueue();
+          if (!events.isEmpty()) {
+            eventsQueue.setElements(events);
+            enableActions(true, Command.RUN);
+          }
+          setStatusText("Events have been loaded to the simulator!");
+        });
       }
 
       @Override
       public void advanced(TrafficSimulator.UpdateEvent ue) {
-        time.setText("" + ue.getCurrentTime());
-        refreshTables(ue.getVehicles(), ue.getRoads(), ue.getJunctions());
-        eventsQueue.setElements(ue.getEventQueue());
-        generateGraph(ue.getVehicles(), ue.getRoads(), ue.getJunctions(),
-            controller.getSimulator().getGreenRoads());
-        setStatusText("Simulator advanced " + ue.getCurrentTime() + " steps!");
+        SwingUtilities.invokeLater(() -> {
+          time.setText("" + ue.getCurrentTime());
+          refreshTables(ue.getVehicles(), ue.getRoads(), ue.getJunctions());
+          eventsQueue.setElements(ue.getEventQueue());
+          generateGraph(ue.getVehicles(), ue.getRoads(), ue.getJunctions(),
+              controller.getSimulator().getGreenRoads());
+          setStatusText("Simulator advanced " + ue.getCurrentTime() + " steps!");
+        });
       }
 
       @Override
       public void error(TrafficSimulator.UpdateEvent ue, String msg) {
-        setStatusText("An error occurred!!");
-        stepper.stop();
-        showErrorMessage("Simulator error", msg);
-        SimulatorWindow.this.reset();
+        SwingUtilities.invokeLater(() -> {
+          setStatusText("An error occurred!!");
+          stepper.stop();
+          showErrorMessage("Simulator error", msg);
+          SimulatorWindow.this.reset();
+        });
       }
     });
   }
@@ -561,7 +573,6 @@ public class SimulatorWindow extends JFrame {
       Collection<Junction> junctions = dialog.getSelectedJunctions();
       reportsArea.clear();
       simulator.generateReports(new TextAreaOutputStream(reportsArea), junctions, roads, vehicles);
-      enableActions(true, Command.DELETE_REPORT, Command.SAVE_REPORT);
     }
   }
 
@@ -570,7 +581,6 @@ public class SimulatorWindow extends JFrame {
    */
   private void deleteReports() {
     reportsArea.clear();
-    enableActions(false, Command.DELETE_REPORT, Command.SAVE_REPORT);
   }
 
   /**
